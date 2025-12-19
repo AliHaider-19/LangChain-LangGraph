@@ -1,4 +1,4 @@
-import { createAgent, tool } from "langchain";
+import { createAgent, tool, createMiddleware, ToolMessage } from "langchain";
 import { ChatOllama } from "@langchain/ollama";
 import * as z from "zod";
 
@@ -46,17 +46,52 @@ async function main() {
     }),
   });
 
+  let messeges = [{}];
   // Configuration of the model
   const model = new ChatOllama({
+    baseUrl: "https://localhost:11434",
+    model: "gpt-oss:120b-cloud",
+  });
+  const basicModel = new ChatOllama({
+    baseUrl: "https://localhost:11434",
+    model: "gpt-oss:120b-cloud",
+  });
+  const advanceModel = new ChatOllama({
     baseUrl: "http://localhost:11434",
     model: "qwen3-coder:480b-cloud",
-    temperature: 0.2,
-    numCtx: 2048,
+  });
+
+  // Handle dynamic model selection based on number of request.
+  const dynamicModelSelection = createMiddleware({
+    name: "DynamicModelSelection",
+    wrapModelCall: (request, handler) => {
+      const messegeCount = result.messeges.lenght;
+      return handler({
+        ...request,
+        model: messegeCount > 10 ? advanceModel : basicModel,
+      });
+    },
+  });
+
+  // Handle the tools error if anything crashes runtime.
+
+  const handleToolError = createMiddleware({
+    wrapToolCall: async (request, handler) => {
+      try {
+        return await handler(request);
+      } catch (error) {
+        return new ToolMessage({
+          content: `Tool error: Please check your input and try again. (${error})`,
+          tool_call_id,
+        });
+      }
+    },
   });
 
   const agent = createAgent({
     model,
     tools: [add, subtract, divide, getWeather],
+    middleware: [dynamicModelSelection, handleToolError],
   });
 }
 
