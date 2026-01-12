@@ -5,7 +5,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "support:simple": "node LangGraph/customerSupportAgent-simple.js",
+    "support:full": "node LangGraph/customerSupportAgent.js",
+    "checkpoint": "node LangGraph/checkPoints.js"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.3.1",
