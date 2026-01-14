@@ -19,7 +19,7 @@ let embedder;
 const getEmbedder = async () => {
   if (!embedder) {
     console.log("🔄 Loading embedding model...");
-    embedder = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+    embedder = await pipeline("feature-extraction", "Xenova/bge-base-en-v1.5");
     console.log("✅ Embedding model ready");
   }
   return embedder;
@@ -81,12 +81,14 @@ export const searchNotes = async (query, limit = 5) => {
   });
 
   // Flatten for frontend
-  return result.documents[0].map((doc, i) => ({
-    content: doc,
-    metadata: result.metadatas[0][i],
-    distance: result.distances[0][i],
-    id: result.ids[0][i],
-  }));
+  return result.documents[0]
+    .map((doc, i) => ({
+      content: doc,
+      metadata: result.metadatas[0][i],
+      distance: result.distances[0][i],
+      id: result.ids[0][i],
+    }))
+    .filter((item) => item.distance < 1.2);
 };
 export const getAllDocuments = async () => {
   try {
@@ -169,7 +171,10 @@ await addNotes(notesData);
 // EMBEDDING NOTES AND SEARCHING
 // ========================================
 
-const searchResults = await searchNotes("vector databases", 5);
+const searchResults = await searchNotes(
+  "Explain what vector databases are and how semantic search works",
+  5
+);
 console.log("Search Results:", searchResults);
 
 const results = await getAllDocuments();
