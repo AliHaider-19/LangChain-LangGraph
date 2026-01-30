@@ -107,6 +107,52 @@ export const getAllDocuments = async () => {
   }
 };
 
+// Search by document IDs
+const clauseSearchByIds = async (ids) => {
+  if (!ids?.length) {
+    return [];
+  }
+
+  const result = await notes.get({
+    ids: ids,
+  });
+
+  if (!result.documents?.length) {
+    return [];
+  }
+
+  return result.documents.map((doc, i) => ({
+    content: doc,
+    metadata: result.metadatas[i],
+    id: result.ids[i],
+  }));
+};
+
+// Search using where clause operators (filters by metadata)
+const clauseSearch = async (titles, limit = 5) => {
+  if (!titles?.length) {
+    return [];
+  }
+
+  // Using $or to match any of the provided titles
+  const result = await notes.get({
+    where: {
+      $or: titles.map((title) => ({ title: { $eq: title } })),
+    },
+    limit: limit,
+  });
+
+  if (!result.documents?.length) {
+    return [];
+  }
+
+  return result.documents.map((doc, i) => ({
+    content: doc,
+    metadata: result.metadatas[i],
+    id: result.ids[i],
+  }));
+};
+
 const notesData = [
   {
     id: "1",
@@ -171,11 +217,22 @@ await addNotes(notesData);
 // EMBEDDING NOTES AND SEARCHING
 // ========================================
 
-const searchResults = await searchNotes(
-  "Explain what vector databases are and how semantic search works",
-  5
-);
-console.log("Search Results:", searchResults);
+// const searchResults = await searchNotes(
+//   "Explain what vector databases are and how semantic search works",
+//   5
+// );
+// console.log("Search Results:", searchResults);
 
-const results = await getAllDocuments();
-console.log("All Documents in ChromaDB:", results);
+// const results = await getAllDocuments();
+// console.log("All Documents in ChromaDB:", results);
+
+// Example 1: Search by IDs
+const idResults = await clauseSearchByIds(["3", "7"]);
+console.log("Search by IDs:", idResults);
+
+// Example 2: Search using where clause with $or operator (by title metadata)
+const clauseResults = await clauseSearch([
+  "LangChain Basics",
+  "Docker Introduction",
+]);
+console.log("Where Clause Search Results:", clauseResults);
